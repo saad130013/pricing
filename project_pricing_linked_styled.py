@@ -2,27 +2,10 @@
 import streamlit as st
 import pandas as pd
 import requests
+from difflib import get_close_matches
 
 st.set_page_config(page_title="تسعير عروض المشاريع - ذكي", layout="wide")
-
-st.markdown("""
-    <style>
-    .main-title {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
-        margin-bottom: 1rem;
-    }
-    .material-note {
-        font-size: 1rem;
-        color: #555;
-    }
-    </style>
-    <div class="main-title">🤖 نظام ذكي لتسعير مشاريع المقاولات</div>
-    <div class="material-note">⚙️ الأسعار يتم جلبها تلقائيًا من Google Sheets</div>
-    <hr style="margin-top: 10px; margin-bottom: 25px;">
-""", unsafe_allow_html=True)
-
+st.title("🤖 تسعير مشاريع المقاولات مع ربط أسعار Google Sheets")
 
 # رابط Google Sheets بصيغة CSV
 sheet_url = "https://docs.google.com/spreadsheets/d/1zeZclvD5IuaZRUIDlrg2DNNEoBg4s69AqRFmmsnkzZs/export?format=csv"
@@ -47,7 +30,11 @@ if uploaded_file:
 
             # مطابقة السعر حسب المادة (الوصف)
             def get_price(desc):
-                match = material_prices[material_prices["المادة"].str.strip() == str(desc).strip()]
+                matches = get_close_matches(str(desc).strip(), material_prices["المادة"].astype(str).str.strip(), n=1, cutoff=0.6)
+                if matches:
+                    match = material_prices[material_prices["المادة"].str.strip() == matches[0]]
+                else:
+                    return 0.0
                 if not match.empty:
                     return match["السعر الحالي (ريال)"].values[0]
                 return 0.0
